@@ -12,7 +12,7 @@ try {
   process.loadEnvFile(".env.local");
 } catch {}
 
-type Gold = { id: string; text: string; payer: string; reasons: string[]; level: string; strength: string };
+type Gold = { id: string; split: string; text: string; payer: string; reasons: string[]; level: string; strength: string };
 
 const THRESHOLD = 0.75;
 const remote = process.env.EVAL_URL;
@@ -50,7 +50,7 @@ async function one(r: Gold) {
     const again = await runChain(clean + answerLine(q, truth), call);
     afterQuestion = { confident: !needsHuman(again, THRESHOLD), correct: allRight(again, r) };
   }
-  return { id: r.id, confidence: chainConfidence(chain), correct: allRight(chain, r), steps, afterQuestion };
+  return { id: r.id, split: r.split, confidence: chainConfidence(chain), correct: allRight(chain, r), steps, afterQuestion };
 }
 
 async function main() {

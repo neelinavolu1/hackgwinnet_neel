@@ -7,6 +7,7 @@ import results from "@/data/eval-results.json";
 type StepRow = { pred: string[]; gold: string[]; confidence: number; correct: boolean };
 type Row = {
   id: string;
+  split: string;
   confidence: number;
   correct: boolean;
   steps: Record<string, StepRow>;
@@ -43,6 +44,13 @@ const CURVE = Array.from({ length: 46 }, (_, i) => {
   return { t: Math.round(t * 100) / 100, coverage: m.coverage * 100, accuracy: m.accuracy === null ? null : m.accuracy * 100 };
 });
 
+// The 14 letters written after the prompts were frozen. This is the number to trust.
+const heldOut = rows.filter((r) => r.split === "holdout");
+const heldAnswered = heldOut.filter((r) => r.confidence >= 0.75);
+const heldRight = heldAnswered.filter((r) => r.correct).length;
+const heldFull = heldOut.filter((r) => r.correct).length;
+const tuned = rows.length - heldOut.length;
+
 const stuck = rows.filter((r) => r.afterQuestion);
 const resolved = stuck.filter((r) => r.afterQuestion?.confident);
 const resolvedRight = resolved.filter((r) => r.afterQuestion?.correct);
@@ -70,7 +78,7 @@ export function EvalView() {
       <div className="panel p-6 sm:p-10">
         <h1 tabIndex={-1} className="mb-3 text-4xl sm:text-5xl">How accurate is it?</h1>
         <p className="max-w-3xl text-muted">
-          A confidence number only helps if it is honest. So we ran {rows.length} made-up denial letters through the same steps the app uses, and checked each answer against the right one. No real patient data was used.
+          A confidence number only helps if it is honest. So we ran {rows.length} made-up denial letters through the same steps the app uses, and checked each answer against the right one. No real patient data was used. The charts below use all {rows.length}.
         </p>
         <p className={`mt-4 max-w-3xl rounded-xl p-4 text-base ${isMock ? "bg-warn-bg text-warn" : "bg-good-bg text-good"}`}>
           {isMock
@@ -78,6 +86,14 @@ export function EvalView() {
             : <><strong>Source: {results.model}.</strong> Scored on {results.generatedAt}.</>}{" "}
           This is a small set written by one team, so treat these numbers as rough.
         </p>
+        {heldOut.length > 0 && (
+          <div className="mt-4 max-w-3xl rounded-xl border border-control p-4">
+            <h2 className="mb-1 font-sans text-base font-bold">The honest test</h2>
+            <p className="text-base">
+              We tuned our questions on {tuned} letters, so scores on those run high. Then we locked the questions and wrote {heldOut.length} new letters. On those new letters, it got {heldFull} of {heldOut.length} fully right. At 75% sure, it answered {heldAnswered.length} and got {heldRight} right. That is {pct(heldRight / heldAnswered.length)}, and the rest stopped to ask.
+            </p>
+          </div>
+        )}
 
         <div className="mt-6 max-w-xl">
           <label htmlFor="eval-threshold" className="block font-bold">How sure must we be? <output htmlFor="eval-threshold">{pct(threshold)}</output></label>
