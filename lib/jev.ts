@@ -6,7 +6,7 @@
 // answers[q].choice + answers[q].probabilities for "choice", and answers[q].noul (a probability) for "noul".
 
 export type Result = { label: string; confidence: number; scores: Record<string, number> };
-export type ClassifyOptions = { multiLabel?: boolean; question?: string; criteria?: Record<string, string> };
+export type ClassifyOptions = { multiLabel?: boolean; question?: string; criteria?: Record<string, string>; boundary?: { true: string; false: string } };
 export type Classify = (text: string, labels: readonly string[], opts?: ClassifyOptions) => Promise<Result[]>;
 
 /** Multi-label: every label at or above 0.5, or the best label when none is. */
@@ -25,7 +25,7 @@ export function jevClient(url: string, key: string, model = "jev-latest"): Class
   return async (text, labels, opts = {}) => {
     const describe = (l: string) => opts.criteria?.[l] ?? l;
     const questions = opts.multiLabel
-      ? Object.fromEntries(labels.map((l) => [l, { type: "noul", instructions: `${opts.question ?? ""} ${describe(l)}`.trim() }]))
+      ? Object.fromEntries(labels.map((l) => [l, { type: "noul", instructions: `${opts.question ?? ""} ${describe(l)}`.trim(), criteria: opts.boundary }]))
       : { pick: { type: "choice", instructions: opts.question ?? "Choose the best label.", criteria: Object.fromEntries(labels.map((l) => [l, describe(l)])) } };
 
     const r = await fetch(url, {
@@ -95,14 +95,7 @@ const sigmoid = (x: number) => 1 / (1 + Math.exp(-x));
 /** No network, no key: the same interface as Jev, scored from phrases in the text. */
 export const mockClient: Classify = async (text, labels, opts = {}) => {
   if (opts.multiLabel) {
-    const named = labels.filter((l) => l !== "other");
-    const scores: Record<string, number> = Object.fromEntries(named.map((l) => [l, sigmoid(1.6 * keywordScore(text, l) - 2.4)]));
-    if (labels.includes("other")) {
-      const best = Math.max(0, ...Object.values(scores));
-      // With no clear match "other" sits near 0.5 on purpose: silence in a letter is not evidence.
-      scores.other = sigmoid(keywordScore(text, "other") + 3 * (0.5 - best));
-    }
-    return toMulti(scores);
+    return toMulti(Object.fromEntries(labels.map((l) => [l, sigmoid(1.6 * keywordScore(text, l) - 2.4)])));
   }
   const raw = labels.map((l) => keywordScore(text, l));
   const total = raw.reduce((s, x) => s + Math.exp(x), 0);

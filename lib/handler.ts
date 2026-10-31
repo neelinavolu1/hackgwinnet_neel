@@ -21,12 +21,11 @@ export async function handleClassify(body: unknown, env: ClientEnv) {
 
   // Second lock on the door: the browser already redacted, and this runs the same rules again.
   const clean = redact(text).redacted;
-  const opts = { multiLabel: def.multiLabel, question: def.question, criteria: def.criteria };
   const { classify, name } = getClient(env);
   try {
-    return json({ results: await classify(clean, chosen, opts), client: name });
+    return json({ results: await classify(clean, chosen, def), client: name });
   } catch {
     // Keeps a live demo going, and the client tag makes the UI say so out loud.
-    return json({ results: await mockClient(clean, chosen, opts), client: "mock-fallback" });
+    return json({ results: await mockClient(clean, chosen, def), client: "mock-fallback" });
   }
 }

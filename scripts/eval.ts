@@ -1,6 +1,7 @@
 // Runs every synthetic letter through the real pipeline (redact, then the chain) and writes
-// data/eval-results.json for the /eval page. Uses Jev when JEV_API_URL and JEV_API_KEY are set,
-// else the keyword fallback. `npm run eval` regenerates it.
+// data/eval-results.json for the /eval page. `npm run eval` regenerates it.
+// EVAL_URL=https://careroute-appeal.pages.dev scores through the deployed API, so no local key is needed.
+// Otherwise it uses Jev when JEV_API_URL and JEV_API_KEY are set, else the keyword fallback.
 import { readFileSync, writeFileSync } from "node:fs";
 import { chainConfidence, needsHuman, runChain, STEP_ORDER, STEPS, type Caller, type ChainResult, type StepName } from "../lib/chain";
 import { answerLine, pickQuestion } from "../lib/clarify";
@@ -14,8 +15,19 @@ try {
 type Gold = { id: string; text: string; payer: string; reasons: string[]; level: string; strength: string };
 
 const THRESHOLD = 0.75;
-const { classify, name } = getClient(process.env);
-const call: Caller = (step, text, labels) => classify(text, labels, STEPS[step]);
+const remote = process.env.EVAL_URL;
+const { classify, name: localName } = getClient(process.env);
+const name = remote ? "jev" : localName;
+
+// The API falls back to keywords on a Jev error. Here that would quietly mix two scorers, so it stops.
+async function viaApi(step: StepName, text: string, labels: readonly string[]) {
+  const r = await fetch(`${remote}/api/classify`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ step, text, labels }) });
+  const body = await r.json();
+  if (!r.ok || body.client !== "jev") throw new Error(`Expected Jev, got ${r.status} ${body.client ?? body.error}`);
+  return body.results;
+}
+
+const call: Caller = (step, text, labels) => (remote ? viaApi(step, text, labels) : classify(text, labels, STEPS[step]));
 
 const rows: Gold[] = readFileSync("data/denials.jsonl", "utf8").trim().split("\n").map((l) => JSON.parse(l));
 
