@@ -3,8 +3,8 @@
 export const DEMOS = [
   {
     id: "clear",
-    title: "Power wheelchair, Medicare",
-    hint: "A clear reason and a strong appeal",
+    title: "Power wheelchair denied by Medicare",
+    hint: "Missing doctor's visit note. Shows the fix and your deadline.",
     text: `Medicare Durable Medical Equipment Contractor
 Notice of Denied Claim
 
@@ -31,8 +31,8 @@ Your right to appeal: If you disagree, you may request a redetermination. Your r
   },
   {
     id: "messy",
-    title: "Manual wheelchair, Medicaid",
-    hint: "Vague reasons, so it asks you one question",
+    title: "Manual wheelchair denied by Medicaid",
+    hint: "Two vague reasons. Asks you one question first.",
     text: `GEORGIA MEDICAID MANAGED CARE
 Piedmont Family Health Plan
 NOTICE OF ADVERSE BENEFIT DETERMINATION
@@ -52,8 +52,8 @@ Questions? Call Member Services at 1-800-555-0177.`,
   },
   {
     id: "unclear",
-    title: "Tilt wheelchair, job insurance",
-    hint: "Too unclear, so it sends you to a person",
+    title: "Tilt wheelchair denied by job insurance",
+    hint: "No clear reason. Sends you to a free helper.",
     text: `Lakeshore Employers Health Plan
 Explanation of Benefits
 

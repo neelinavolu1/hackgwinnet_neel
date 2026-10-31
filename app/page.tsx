@@ -220,7 +220,7 @@ export default function Home() {
           <div className="panel grid gap-8 p-6 sm:p-10 lg:grid-cols-[1fr_1.1fr] lg:gap-12 lg:p-14">
             <div>
               <p className="tag mb-5 border-line text-ink">No account. Nothing stored on a server.</p>
-              <h1 tabIndex={-1} ref={heading} className="mb-4 text-5xl sm:text-6xl">Your equipment was denied. Let's find out why.</h1>
+              <h1 tabIndex={-1} ref={heading} className="mb-4 text-5xl sm:text-6xl">Your wheelchair or scooter was denied. Let's find out why.</h1>
               <p className="mb-6 text-muted">Add your denial letter. We show you what is missing, who to ask, and when your appeal is due. Then we help you write it.</p>
               <h2 className="mb-2 font-sans text-base font-bold">Try a sample letter</h2>
               <div className="grid gap-2">
@@ -240,15 +240,15 @@ export default function Home() {
               <h2 id="yours" className="mb-1 text-2xl">Your denial letter</h2>
               <p className="mb-3 text-base text-muted">Photos and PDFs are read here, on your device.</p>
               <label htmlFor="letter-text" className="mb-1 block font-bold">Paste the text</label>
-              <textarea id="letter-text" className="field" rows={9} value={raw} onChange={(e) => setRaw(e.target.value)} />
+              <textarea id="letter-text" className="field" rows={9} value={raw} onChange={(e) => { setRaw(e.target.value); setError(""); }} />
 
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 <label className="btn btn-light cursor-pointer focus-within:outline-3 focus-within:outline-offset-2 focus-within:outline-[var(--focus)]">
                   <input type="file" accept="image/*,application/pdf" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ""; }} />
-                  Upload a photo or PDF
+                  Upload letter photo or PDF
                 </label>
                 <button type="button" className="btn btn-light" disabled={voiceBusy} aria-pressed={listening === "letter"} onClick={() => startDictation()}>
-                  {voiceBusy ? "Getting voice ready" : listening === "letter" ? "Stop listening" : "Speak your letter"}
+                  {voiceBusy ? "Getting voice ready" : listening === "letter" ? "Stop listening" : "Read your letter out loud"}
                 </button>
               </div>
 
@@ -272,8 +272,16 @@ export default function Home() {
 
               {error && <p role="alert" className="mt-3 rounded-xl bg-bad-bg p-3 text-base text-bad">{error}</p>}
 
-              <button type="button" className="btn btn-dark mt-3 w-full" disabled={!raw.trim()} onClick={() => go("review")}>
-                Continue <Chevron />
+              <button
+                type="button"
+                className="btn btn-dark mt-3 w-full"
+                onClick={() => {
+                  if (raw.trim()) return go("review");
+                  setError("Add your letter first. Paste it, upload it, or read it out loud.");
+                  document.getElementById("letter-text")?.focus();
+                }}
+              >
+                Continue to privacy check <Chevron />
               </button>
             </section>
           </div>

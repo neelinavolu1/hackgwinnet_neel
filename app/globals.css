@@ -152,10 +152,9 @@ a {
 
   .btn:disabled {
     cursor: not-allowed;
-    opacity: 1;
-    background: var(--chip);
+    background: var(--panel);
     color: var(--muted);
-    border: 1px solid var(--control);
+    border: 1px dashed var(--control);
     box-shadow: none;
   }
 
@@ -170,14 +169,13 @@ a {
   }
 
   .btn-light {
-    background: linear-gradient(#ffffff, #f0f0f0);
+    background: var(--panel);
     color: var(--ink);
     border: 1px solid var(--control);
-    box-shadow: inset 0 2px 0 #fff;
   }
 
   .btn-light:hover:not(:disabled) {
-    background: #eaeaea;
+    background: var(--bg);
   }
 
   .chip {
@@ -324,9 +322,7 @@ html[data-contrast="high"] .btn-dark {
 }
 
 html[data-contrast="high"] .btn-light {
-  background: #fff;
   border-width: 2px;
-  box-shadow: none;
 }
 
 html[data-contrast="high"] .panel,
