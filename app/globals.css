@@ -1,0 +1,375 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f4f4f4;
+  --panel: #ffffff;
+  --ink: #242424;
+  --muted: #595959;
+  --line: #e5e5e5;
+  --control: #858585;
+  --chip: #ebebeb;
+  --focus: #0b57d0;
+  --good-bg: #edf3ec;
+  --good: #2f5b33;
+  --warn-bg: #fbf3db;
+  --warn: #6f4e00;
+  --bad-bg: #fdebec;
+  --bad: #8f2a28;
+  --removed-bg: #fdebec;
+  --token-bg: #edf3ec;
+}
+
+html[data-contrast="high"] {
+  --bg: #ffffff;
+  --panel: #ffffff;
+  --ink: #000000;
+  --muted: #000000;
+  --line: #000000;
+  --control: #000000;
+  --chip: #ffffff;
+  --good-bg: #ffffff;
+  --good: #000000;
+  --warn-bg: #ffffff;
+  --warn: #000000;
+  --bad-bg: #ffffff;
+  --bad: #000000;
+  --removed-bg: #ffff00;
+  --token-bg: #ffffff;
+}
+
+html[data-text="large"] {
+  font-size: 125%;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-control: var(--control);
+  --color-chip: var(--chip);
+  --color-good: var(--good);
+  --color-good-bg: var(--good-bg);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --color-bad: var(--bad);
+  --color-bad-bg: var(--bad-bg);
+  --font-sans: var(--font-body), system-ui, sans-serif;
+  --font-display: var(--font-heading), var(--font-body), sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+html {
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--bg);
+  font-family: var(--font-sans);
+  font-size: 1.125rem;
+  line-height: 1.55;
+}
+
+@layer base {
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+    line-height: 1.12;
+    color: var(--ink);
+  }
+}
+
+a {
+  text-underline-offset: 3px;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Headings take focus after a step change, for screen readers. A ring there would only be noise. */
+[tabindex="-1"]:focus {
+  outline: none;
+}
+
+@layer components {
+  .frame {
+    max-width: 75rem;
+    margin-inline: auto;
+    border-inline: 1px solid var(--line);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 1rem;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.05);
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 1rem;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+    padding: 1.5rem;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 3rem;
+    padding: 0.5rem 1.125rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    font-size: 1rem;
+    line-height: 1.25;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 120ms, transform 120ms;
+  }
+
+  .btn:active {
+    transform: scale(0.99);
+  }
+
+  .btn:disabled {
+    cursor: not-allowed;
+    opacity: 1;
+    background: var(--chip);
+    color: var(--muted);
+    border: 1px solid var(--control);
+    box-shadow: none;
+  }
+
+  .btn-dark {
+    background: var(--ink);
+    color: #fff;
+    box-shadow: inset 0 2px 0 rgb(255 255 255 / 0.15);
+  }
+
+  .btn-dark:hover:not(:disabled) {
+    background: #3b3b3b;
+  }
+
+  .btn-light {
+    background: linear-gradient(#ffffff, #f0f0f0);
+    color: var(--ink);
+    border: 1px solid var(--control);
+    box-shadow: inset 0 2px 0 #fff;
+  }
+
+  .btn-light:hover:not(:disabled) {
+    background: #eaeaea;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    min-width: 2rem;
+    justify-content: center;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.5rem;
+    background: var(--chip);
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.125rem 0.625rem;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: 1px solid currentColor;
+  }
+
+  .field {
+    width: 100%;
+    min-height: 3rem;
+    padding: 0.625rem 0.75rem;
+    background: var(--panel);
+    color: var(--ink);
+    border: 1px solid var(--control);
+    border-radius: 0.75rem;
+    font-size: 1.0625rem;
+  }
+
+  .field::placeholder {
+    color: var(--muted);
+  }
+
+  .tick {
+    width: 1.5rem;
+    height: 1.5rem;
+    accent-color: var(--ink);
+    flex: none;
+  }
+
+  /* Native checkbox dressed as a switch, so keyboard and screen reader behavior come free. */
+  .switch {
+    appearance: none;
+    position: relative;
+    width: 2.75rem;
+    height: 1.5rem;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid var(--control);
+    cursor: pointer;
+    flex: none;
+    transition: background-color 120ms;
+  }
+
+  .switch::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background: var(--control);
+    transition: transform 120ms;
+  }
+
+  .switch:checked {
+    background: var(--ink);
+    border-color: var(--ink);
+  }
+
+  .switch:checked::after {
+    background: #fff;
+    transform: translateX(1.25rem);
+  }
+
+  .sheet {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-size: 1rem;
+    line-height: 1.6;
+    overflow-y: auto;
+    max-height: 26rem;
+    padding: 1rem;
+  }
+
+  mark.removed {
+    background: var(--removed-bg);
+    color: var(--ink);
+    border-radius: 4px;
+    padding-inline: 2px;
+  }
+
+  mark.token {
+    background: var(--token-bg);
+    color: var(--ink);
+    border-radius: 4px;
+    padding-inline: 2px;
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    font-weight: 700;
+  }
+
+  /* The section break from the reference design: a hairline with a crosshair at each end. */
+  .rule {
+    position: relative;
+    height: 1px;
+    background: var(--line);
+  }
+
+  .rule::before,
+  .rule::after {
+    content: "+";
+    position: absolute;
+    top: -0.8rem;
+    color: var(--control);
+    font-size: 1.125rem;
+    line-height: 1.5rem;
+    background: var(--bg);
+    padding-inline: 0.125rem;
+  }
+
+  .rule::before {
+    left: -0.45rem;
+  }
+
+  .rule::after {
+    right: -0.45rem;
+  }
+}
+
+html[data-contrast="high"] .btn-dark {
+  background: #000;
+  box-shadow: none;
+}
+
+html[data-contrast="high"] .btn-light {
+  background: #fff;
+  border-width: 2px;
+  box-shadow: none;
+}
+
+html[data-contrast="high"] .panel,
+html[data-contrast="high"] .card {
+  border-width: 2px;
+  box-shadow: none;
+}
+
+html[data-motion="reduced"] *,
+html[data-motion="reduced"] *::before,
+html[data-motion="reduced"] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.rise {
+  animation: rise 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 3px solid var(--line);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  animation: spin 800ms linear infinite;
+}
