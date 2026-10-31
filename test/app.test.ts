@@ -5,7 +5,7 @@ import { firstUnsure, needsHuman, runChain, STEPS, type Caller } from "../lib/ch
 import { answerLine, parseAnswer, pickQuestion } from "../lib/clarify";
 import { DEMOS } from "../lib/demos";
 import { handleClassify } from "../lib/handler";
-import { mockClient } from "../lib/jev";
+import { getClient, jevClient, mockClient } from "../lib/jev";
 import { checklist, doctorNote, ics, readingGrade, summary, appealLetter, EMPTY_PERSONAL } from "../lib/letter";
 import { redact, toIso } from "../lib/redaction";
 import { addMonths, computeDeadline, REASONS, REASON_INFO, statedDays, type Level, type Payer } from "../lib/rules";
@@ -245,7 +245,64 @@ describe("clarifying answers and the API boundary", () => {
   });
 });
 
-// Skipped until data/denials.jsonl exists, then covers every synthetic letter.
+describe("Jev client", () => {
+  const stub = (reply: unknown, status = 200) => {
+    const calls: { url: string; init: RequestInit }[] = [];
+    const real = globalThis.fetch;
+    globalThis.fetch = (async (url: string, init: RequestInit) => {
+      calls.push({ url, init });
+      return new Response(JSON.stringify(reply), { status });
+    }) as typeof fetch;
+    return { calls, restore: () => { globalThis.fetch = real; } };
+  };
+
+  test("needs both env vars, else falls back to mock", () => {
+    assert.equal(getClient({}).name, "mock");
+    assert.equal(getClient({ JEV_API_URL: "https://x" }).name, "mock");
+    assert.equal(getClient({ JEV_API_KEY: "k" }).name, "mock");
+    assert.equal(getClient({ JEV_API_URL: "https://x", JEV_API_KEY: "" }).name, "mock");
+    assert.equal(getClient({ JEV_API_URL: "https://x", JEV_API_KEY: "k" }).name, "jev");
+  });
+
+  test("a single-label step sends one choice question and reads probabilities", async () => {
+    const s = stub({ answers: { pick: { choice: "b", probabilities: { a: 0.2, b: 0.8 } } } });
+    const out = await jevClient("https://jev.test/v1", "key", "jev-1")("letter", ["a", "b"], { question: "Which?", criteria: { a: "first", b: "second" } });
+    s.restore();
+    const body = JSON.parse(String(s.calls[0].init.body));
+    assert.equal(s.calls[0].url, "https://jev.test/v1");
+    assert.equal(s.calls[0].init.method, "POST");
+    assert.equal((s.calls[0].init.headers as Record<string, string>).Authorization, "Bearer key");
+    assert.deepEqual(body, { state: "letter", model: "jev-1", questions: { pick: { type: "choice", instructions: "Which?", criteria: { a: "first", b: "second" } } } });
+    assert.deepEqual(out, [{ label: "b", confidence: 0.8, scores: { a: 0.2, b: 0.8 } }]);
+  });
+
+  test("a multi-label step sends one noul per label and keeps every score", async () => {
+    const s = stub({ answers: { a: { noul: 0.9 }, b: { noul: 0.2 }, c: { noul: 0.7 } } });
+    const out = await jevClient("https://jev.test", "key")("letter", ["a", "b", "c"], { multiLabel: true, question: "Reason?", criteria: { a: "A", b: "B", c: "C" } });
+    s.restore();
+    const body = JSON.parse(String(s.calls[0].init.body));
+    assert.equal(body.model, "jev-latest");
+    assert.deepEqual(body.questions.a, { type: "noul", instructions: "Reason? A" });
+    assert.deepEqual(out.map((r) => r.label), ["a", "c"]);
+    assert.deepEqual(out[0].scores, { a: 0.9, b: 0.2, c: 0.7 });
+  });
+
+  test("a Jev outage falls back to mock and says so", async () => {
+    const s = stub({ error: "down" }, 503);
+    const r = await handleClassify({ step: "payer", text: "Medicare letter" }, { JEV_API_URL: "https://jev.test", JEV_API_KEY: "key" });
+    s.restore();
+    assert.equal((await r.json()).client, "mock-fallback");
+  });
+
+  test("the server never forwards unredacted text to Jev", async () => {
+    const s = stub({ answers: { pick: { choice: "medicare", probabilities: { medicare: 1 } } } });
+    await handleClassify({ step: "payer", text: "Patient: Rosa Delgado SSN 123-45-6789 Medicare" }, { JEV_API_URL: "https://jev.test", JEV_API_KEY: "key" });
+    s.restore();
+    const sent = String(s.calls[0].init.body);
+    assert.ok(!sent.includes("Delgado") && !sent.includes("123-45-6789"), sent);
+  });
+});
+
 describe("synthetic set", () => {
   test("no planted identifier survives redaction", (t) => {
     let raw = "";
