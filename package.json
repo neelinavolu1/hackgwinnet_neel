@@ -5,11 +5,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
     "test": "tsx --test test/*.test.ts",
     "eval": "tsx scripts/eval.ts",
     "prebuild": "node scripts/copy-ocr.mjs",
-    "predev": "node scripts/copy-ocr.mjs"
+    "predev": "node scripts/copy-ocr.mjs",
+    "deploy": "npm run build && wrangler pages deploy"
   },
   "dependencies": {
     "next": "16.4.3",

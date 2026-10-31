@@ -11,7 +11,7 @@ import { findEquipment } from "@/lib/letter";
 import { readFile } from "@/lib/ocr";
 import { redact } from "@/lib/redaction";
 import { statedDays } from "@/lib/rules";
-import { listen, voiceMode, type VoiceMode } from "@/lib/speech";
+import { listen, voiceError, voiceMode, type VoiceMode } from "@/lib/speech";
 
 type Stage = "input" | "review" | "working" | "clarify" | "result";
 
@@ -50,6 +50,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [ocr, setOcr] = useState<number | null>(null);
   const [voiceWarn, setVoiceWarn] = useState<null | "letter">(null);
+  const [voiceBusy, setVoiceBusy] = useState(false);
   const [listening, setListening] = useState<null | "letter" | "answer">(null);
   const stopVoice = useRef<() => void>(() => {});
   const client = useRef("mock");
@@ -176,16 +177,20 @@ export default function Home() {
 
   async function startDictation(mode?: VoiceMode) {
     if (listening) return stopVoice.current();
+    setStatus("Getting voice ready.");
+    setVoiceBusy(true);
     const m = mode ?? (await voiceMode());
+    setVoiceBusy(false);
     if (m === "none") return setError("Your browser does not support voice input. Try Chrome or Edge, or paste the text.");
     if (m === "cloud" && !mode) return setVoiceWarn("letter");
     setVoiceWarn(null);
     setError("");
     setListening("letter");
     setStatus("Listening. Press stop when you are done.");
-    stopVoice.current = listen(m, (t) => setRaw((old) => `${old}${old ? " " : ""}${t}`), () => {
+    stopVoice.current = listen(m, (t) => setRaw((old) => `${old}${old ? " " : ""}${t}`), (code) => {
       setListening(null);
       setStatus("Stopped listening.");
+      if (voiceError(code)) setError(voiceError(code)!);
     });
   }
 
@@ -193,13 +198,17 @@ export default function Home() {
     if (listening) return stopVoice.current();
     const m = await voiceMode();
     if (m === "none") return setError("Your browser does not support voice input. Please use the buttons.");
+    setError("");
     setListening("answer");
     setStatus("Listening for yes, no, or not sure.");
     stopVoice.current = listen(m, (t) => {
       const a = parseAnswer(t);
       if (a) answer(a);
       else setStatus("Sorry, we did not catch that. Say yes, no, or not sure.");
-    }, () => setListening(null));
+    }, (code) => {
+      setListening(null);
+      if (voiceError(code)) setError(voiceError(code)!);
+    });
   }
 
   return (
@@ -238,8 +247,8 @@ export default function Home() {
                   <input type="file" accept="image/*,application/pdf" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ""; }} />
                   Upload a photo or PDF
                 </label>
-                <button type="button" className="btn btn-light" aria-pressed={listening === "letter"} onClick={() => startDictation()}>
-                  {listening === "letter" ? "Stop listening" : "Speak your letter"}
+                <button type="button" className="btn btn-light" disabled={voiceBusy} aria-pressed={listening === "letter"} onClick={() => startDictation()}>
+                  {voiceBusy ? "Getting voice ready" : listening === "letter" ? "Stop listening" : "Speak your letter"}
                 </button>
               </div>
 

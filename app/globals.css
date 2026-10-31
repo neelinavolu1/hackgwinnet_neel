@@ -17,9 +17,13 @@
   --bad: #8f2a28;
   --removed-bg: #fdebec;
   --token-bg: #edf3ec;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
 }
 
 html[data-contrast="high"] {
+  --series-1: #000000;
+  --series-2: #000000;
   --bg: #ffffff;
   --panel: #ffffff;
   --ink: #000000;
@@ -107,6 +111,7 @@ a {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    overflow-x: clip;
   }
 
   .panel {

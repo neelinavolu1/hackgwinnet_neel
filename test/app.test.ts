@@ -65,6 +65,12 @@ describe("redaction", () => {
     assert.ok(out.includes("a long review"), out);
   });
 
+  test("a title or a following sentence is not swallowed into a name", () => {
+    const out = redact("Sincerely,\nElena Morozova\nMedical Director\n\nNotice of Denial of Medical Coverage from your Medicare Advantage HMO.\nPatient: Rosa Delgado requested a wheelchair.").redacted;
+    assert.ok(out.includes("Medical Director") && out.includes("Medical Coverage") && out.includes("Medicare Advantage HMO") && out.includes("requested a wheelchair"), out);
+    assert.ok(!out.includes("Morozova") && !out.includes("Delgado"), out);
+  });
+
   test("identifier shapes", () => {
     const cases = ["SSN 123-45-6789", "reach me at dana.fox@example.com", "fax 404.555.0199", "IP 10.2.3.4", "visit myportal.example.com/u/88", "MRN: A1234567", "Serial # SN88421Q", "she is 93 years old", "PO Box 7713", "Gwinnett County", "account 9988776655"];
     for (const c of cases) {

@@ -39,9 +39,11 @@ const MONTH = String.raw`(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May
 const DATE = String.raw`(?:\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b|\b(?:19|20)\d{2}-\d{1,2}-\d{1,2}\b|\b${MONTH}\.?\s+\d{1,2}(?:st|nd|rd|th)?(?:,?\s+\d{4})?\b|\b\d{1,2}(?:st|nd|rd|th)?\s+${MONTH}\.?(?:,?\s+\d{4})?\b|\b${MONTH}\.?,?\s+(?:19|20)\d{2}\b)`;
 const STREET = String.raw`(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Court|Ct|Boulevard|Blvd|Way|Circle|Cir|Place|Pl|Highway|Hwy|Parkway|Pkwy|Terrace|Ter|Trail|Trl|Loop|Pike)`;
 const STATE = String.raw`(?:A[KLRZ]|C[AOT]|D[CE]|FL|GA|HI|I[ADLN]|K[SY]|LA|M[ADEINOST]|N[CDEHJMVY]|O[HKR]|PA|RI|S[CD]|T[NX]|UT|V[AT]|W[AIVY]|Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida|Georgia|Hawaii|Idaho|Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|Montana|Nebraska|Nevada|New Hampshire|New Jersey|New Mexico|New York|North Carolina|North Dakota|Ohio|Oklahoma|Oregon|Pennsylvania|Rhode Island|South Carolina|South Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|West Virginia|Wisconsin|Wyoming)`;
+const ANY_STATE = `(?:${STATE}|${STATE.toUpperCase().replaceAll("(?:", "(?:")})`;
 // One name word: "Alvarez", "O'Neil", "McKinley", "Okafor-Reyes", "ALVAREZ".
 const NW = String.raw`[A-Z][A-Za-z'’]*(?:-[A-Z][A-Za-z'’]+)?`;
-const NAME = String.raw`${NW}(?:\s+[A-Z]\.?(?=\s))?(?:\s+${NW}){0,3}(?:,?\s+(?:Jr|Sr|II|III|IV)\b\.?)?`;
+// Words of a name sit one space apart. A wider gap is a column break in a form, not more name.
+const NAME = String.raw`${NW}(?: [A-Z]\.?(?=\s))?(?: ${NW}){0,3}(?:,? (?:Jr|Sr|II|III|IV)\b\.?)?`;
 const ID_LABEL = String.raw`(?:member|subscriber|policy|group|claim|reference|ref|case|account|acct|medical record|record|chart|mrn|health plan|plan|hicn|mbi|medicare|medicaid|beneficiary|enrollee|recipient|authorization|auth|certificate|license|licence|npi|ptan|serial|device|vehicle|vin|plate|control|icn|tracking|confirmation|appeal|prior auth|document|id|identification)`;
 const PERSON_LABEL = String.raw`(?:patient|member|beneficiary|enrollee|insured|subscriber|policyholder|applicant|recipient|guardian|parent|spouse|caregiver|representative|employer|name|patient name|member name|beneficiary name|enrollee name|subscriber name|insured name|to|attn|attention|prepared for|c\/o|care of|cc|from|ordering (?:provider|physician|practitioner)|prescriber|physician|provider|treating (?:provider|physician|practitioner)|therapist|signed by)`;
 
@@ -65,12 +67,13 @@ const RULES: Rule[] = [
   { kind: "ADDRESS", re: new RegExp(String.raw`\b\d{1,6}\s+(?:[NSEW]\.?\s+)?(?:[A-Za-z0-9.'’-]+\s+){0,4}?${STREET}\b\.?(?:\s+(?:NE|NW|SE|SW|N|S|E|W)\b)?(?:,?\s*(?:Apt|Apartment|Unit|Suite|Ste|Bldg|Building|Floor|Fl|#)\.?\s*#?[\w-]+)?`, "gi") },
   { kind: "ADDRESS", re: /\b(?:P\.?\s?O\.?\s?Box|Post Office Box)\s+\d+\b/gi },
   { kind: "ADDRESS", re: /\b(?:Apt|Apartment|Unit|Suite|Ste)\.?\s*#?\s*\d[\w-]*\b/gi },
-  { kind: "CITY", re: new RegExp(String.raw`\b[A-Z][A-Za-z.'’-]+(?:\s+[A-Z][A-Za-z.'’-]+){0,2},?\s+${STATE}\b(?:\s+\d{5}(?:-\d{4})?)?`, "g") },
+  // Needs a comma or a ZIP, because "Member ID" otherwise reads as a town in Idaho.
+  { kind: "CITY", re: new RegExp(String.raw`\b[A-Z][A-Za-z.'’-]+(?:[ \t]+[A-Z][A-Za-z.'’-]+){0,2}(?:,[ \t]*${ANY_STATE}\b(?:[ \t]+\d{5}(?:-\d{4})?)?|[ \t]+${ANY_STATE}[ \t]+\d{5}(?:-\d{4})?)`, "g") },
   { kind: "CITY", re: /\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\s+(?:County|Parish)\b/g },
   { kind: "ZIP", re: /\b\d{5}(?:-\d{4})?\b/g },
   { kind: "AGE_90_PLUS", re: /\b(?:9\d|1[01]\d)[- ]?(?:years?|yrs?|y\/?o)\b(?:[- ]old)?/gi },
   { kind: "NAME", re: new RegExp(String.raw`\b(?:Mr|Mrs|Ms|Mx|Miss|Dr|Doctor|Prof)\.?\s+(?<v>${NAME})`, "gd"), sure: true },
-  { kind: "NAME", re: new RegExp(String.raw`\b(?:Dear|Hello|Hi)\s+(?:(?:Mr|Mrs|Ms|Mx|Miss|Dr)\.?\s+)?(?<v>${NAME})`, "gd"), sure: true },
+  { kind: "NAME", re: new RegExp(String.raw`\b(?:Dear|Hello|Hi)\s+(?:(?:Mr|Mrs|Ms|Mx|Miss|Dr)\.?\s+)?(?!(?:Mr|Mrs|Ms|Mx|Miss|Dr)\b)(?<v>${NAME})`, "gd"), sure: true },
   { kind: "NAME", re: new RegExp(String.raw`\b(?:${PERSON_LABEL})\b(?:\s+name)?\s*[:#-]\s*(?<v>${NAME})`, "gid") },
   { kind: "NAME", re: new RegExp(String.raw`(?<v>${NW}(?:\s+[A-Z]\.?)?\s+${NW}(?:\s+${NW})?),\s*(?:MD|DO|NP|PA-?C?|DPT|PT|OT|OTR(?:\/L)?|RN|ATP|PhD|ARNP|APRN|CRNP)\b`, "gd") },
   { kind: "NAME", re: new RegExp(String.raw`(?:Sincerely|Regards|Respectfully|Thank you)[,.]?\s*\n+\s*(?<v>${NAME})`, "gid") },
@@ -105,6 +108,7 @@ const SAFE = new Set(
   walker walkers wants was we well were what wheelchair wheelchairs when where which while who why will with within without work works would write written
   year years yes you your
   january february march april june july august september october november december monday tuesday wednesday thursday friday saturday sunday
+  advantage beneficiary beneficiaries director security act hmo ppo epo pos snp rollator tilt tilt-in-space ultra
   aetna anthem cigna humana kaiser unitedhealthcare wellcare amerigroup caresource centene molina oscar
   dme hcpcs icd npi cms hhs ship qic alj omha mbi msn eob noabd idn lcd ncd swo f2f pt ot ptp atp ms als cva copd sci cp`
     .split(/\s+/),
@@ -115,6 +119,8 @@ const isSafe = (w: string) => SAFE.has(w.toLowerCase().replace(/^[^a-z0-9]+|[^a-
 // HCPCS, LCD, and form numbers look like IDs, but they name a rule or a product, not a person.
 const KEEP_ID = /^(?:[A-Z]\d{4}(?:-[A-Z0-9]{2})?|L\d{5}|A\d{5}|CMS-\d+[A-Z]?|ICN\d+-?[A-Z]*|\d+(?:-\d+)*-(?:month|day|year|point|page|week|hour)s?)$/i;
 const FORM = /^(?:face-to-face|out-of-network|in-network|fee-for-service|non-covered|1-800-MEDICARE)$/i;
+
+const ORG = /\b(?:member|beneficiary|subscriber|patient|enrollee|id|health|plan|medical|medicare|medicaid|insurance|care|group|supply|services?|inc|llc|company|center|hospital|clinic|contractor|department|office|notice|director|determination|benefits?|coverage|appeals?)\b/i;
 
 function findNameShapes(text: string): Span[] {
   const spans: Span[] = [];
@@ -131,18 +137,29 @@ function findNameShapes(text: string): Span[] {
     add(a.index, b.index + b[0].length);
   }
 
-  // A line that is nothing but a name, from an address block.
-  for (const m of text.matchAll(/^[ \t]*([A-Z][A-Z'’-]+(?:[ \t]+[A-Z]\.?)?(?:[ \t]+[A-Z][A-Z'’-]+){1,3})[ \t]*$/gm)) {
+  // A line that is nothing but a name, from an address block. "HOPE LONG" has only one unknown word,
+  // so one is enough unless the line reads like an organization.
+  for (const m of text.matchAll(/^[ \t]*([A-Z][A-Za-z'’-]+(?:[ \t]+[A-Z]\.?)?(?:[ \t]+[A-Z][A-Za-z'’-]+){1,3})[ \t]*$/gm)) {
     const unknown = m[1].split(/\s+/).filter((w) => w.length > 1 && !isSafe(w)).length;
-    if (unknown >= 2) add(m.index + m[0].indexOf(m[1]), m.index + m[0].indexOf(m[1]) + m[1].length);
+    const start = m.index + m[0].indexOf(m[1]);
+    if (unknown >= 2 || (unknown === 1 && !ORG.test(m[1]))) add(start, start + m[1].length);
   }
   return spans;
 }
 
-function mergeSpans(spans: Span[]) {
+/** Overlapping matches become one span. Keeping only the first would let the rest of the second leak. */
+function mergeSpans(spans: Span[], text: string) {
   const sorted = [...spans].sort((a, b) => a.start - b.start || b.end - a.end);
   const kept: Span[] = [];
-  for (const s of sorted) if (!kept.length || s.start >= kept[kept.length - 1].end) kept.push(s);
+  for (const s of sorted) {
+    const last = kept[kept.length - 1];
+    if (last && s.start < last.end) {
+      last.end = Math.max(last.end, s.end);
+      last.original = text.slice(last.start, last.end);
+    } else {
+      kept.push({ ...s });
+    }
+  }
   return kept;
 }
 
@@ -188,7 +205,11 @@ export function redact(text: string, hide: string[] = []): Redaction {
 
   for (const { kind, re, sure } of RULES) {
     for (const m of text.matchAll(re)) {
-      const [start, end] = m.indices?.groups?.v ?? [m.index, m.index + m[0].length];
+      const [start, matchEnd] = m.indices?.groups?.v ?? [m.index, m.index + m[0].length];
+      // Case-insensitive labels let NAME run into lowercase words: "Patient: Rosa Delgado requested a chair".
+      // A value in all lowercase stays whole, since that may be an OCR'd name with no capitals to go on.
+      const caps = kind === "NAME" ? text.slice(start, matchEnd).match(/^[A-Z][^\s,]*(?:[ \t]+[A-Z][^\s,]*)*/)?.[0] : null;
+      const end = caps ? start + caps.length : matchEnd;
       const value = text.slice(start, end);
       if ((kind === "ID" && (KEEP_ID.test(value) || FORM.test(value))) || (kind === "NAME" && !sure && value.split(/\s+/).every(isSafe))) continue;
       add(start, end, kind);
@@ -204,7 +225,13 @@ export function redact(text: string, hide: string[] = []): Redaction {
     for (const m of text.matchAll(new RegExp(String.raw`\b${escapeRe(w)}\b`, flags))) add(m.index, m.index + m[0].length, "NAME");
   }
 
-  spans = mergeSpans(spans);
+  // The word beside a known name is part of it: "Dear Hope" also takes the "Long" in "Hope Long".
+  for (const w of parts) {
+    const beside = new RegExp(String.raw`\b${escapeRe(w)}[ \t]+(?:[A-Z]\.?[ \t]+)?([A-Z][A-Za-z'’-]+)`, "g");
+    for (const m of text.matchAll(beside)) if (!ORG.test(m[1])) add(m.index, m.index + m[0].length, "NAME");
+  }
+
+  spans = mergeSpans(spans, text);
   let redacted = "";
   let at = 0;
   const counts: Record<string, number> = {};

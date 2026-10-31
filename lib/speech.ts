@@ -27,16 +27,26 @@ const recognizer = () => {
 
 export type VoiceMode = "local" | "cloud" | "none";
 
+const within = <T,>(p: Promise<T> | undefined, ms: number) =>
+  Promise.race([p, new Promise<undefined>((done) => setTimeout(() => done(undefined), ms))]);
+
 export async function voiceMode(): Promise<VoiceMode> {
   const SR = recognizer();
   if (!SR) return "none";
   const want = { langs: ["en-US"], processLocally: true };
   try {
-    const state = await SR.available?.(want);
+    const state = await within(SR.available?.(want), 2_000);
     if (state === "available") return "local";
-    if ((state === "downloadable" || state === "downloading") && (await SR.install?.(want))) return "local";
+    if ((state === "downloadable" || state === "downloading") && (await within(SR.install?.(want), 30_000))) return "local";
   } catch {}
   return "cloud";
+}
+
+/** Plain words for a recognition failure, or null when the patient simply pressed stop. */
+export function voiceError(code?: string) {
+  if (!code || code === "aborted") return null;
+  if (code === "no-speech") return "We did not hear anything. Please try again.";
+  return "We could not use your microphone. Check your browser's microphone setting, or use the text box.";
 }
 
 export function listen(mode: VoiceMode, onText: (t: string) => void, onDone: (error?: string) => void) {

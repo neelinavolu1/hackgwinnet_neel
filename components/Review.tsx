@@ -46,14 +46,14 @@ export function Review({ raw, r, onHide, denialDate, onDenialDate, threshold, on
       </p>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <section aria-labelledby="stays" className="overflow-hidden rounded-xl border border-line">
-          <h3 id="stays" className="border-b border-line bg-bg px-4 py-3 font-sans text-base font-bold">Stays on your device</h3>
+        <div className="overflow-hidden rounded-xl border border-line">
+          <h2 id="stays" className="border-b border-line bg-bg px-4 py-3 font-sans text-base font-bold">Stays on your device</h2>
           <div className="sheet" tabIndex={0} role="region" aria-labelledby="stays"><Original text={raw} r={r} /></div>
-        </section>
-        <section aria-labelledby="leaves" className="overflow-hidden rounded-xl border border-control">
-          <h3 id="leaves" className="border-b border-line bg-bg px-4 py-3 font-sans text-base font-bold">What leaves your device</h3>
+        </div>
+        <div className="overflow-hidden rounded-xl border border-control">
+          <h2 id="leaves" className="border-b border-line bg-bg px-4 py-3 font-sans text-base font-bold">What leaves your device</h2>
           <div className="sheet" tabIndex={0} role="region" aria-labelledby="leaves"><Outbound text={r.redacted} /></div>
-        </section>
+        </div>
       </div>
 
       <div className="mt-6 grid gap-6 md:grid-cols-3">
